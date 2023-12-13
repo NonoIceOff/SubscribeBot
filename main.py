@@ -53,11 +53,22 @@ def subscribe_to_commenters(youtube, video_id, max_results=5):
     for commenter_id in commenters:
         id_guy = commenter_id["snippet"]["topLevelComment"]["snippet"]["authorChannelId"]["value"]
         print(f"ChaîneID {id_guy} récupérée")
-        add_subscription(youtube, id_guy)
-        print(f"Abonnement à la chaîne {commenter_id['snippet']['authorDisplayName']} effectué.")
-        print("------------")
+        if is_channel_subscribed(youtube) == False:
+            add_subscription(youtube, id_guy)
+            print(f"Abonnement à la chaîne {commenter_id['snippet']['authorDisplayName']} effectué.")
+            print("------------")
+
+def is_channel_subscribed(youtube):
+    subscriptions_response = youtube.subscriptions().list(
+        part='snippet',
+        mine=True,
+        maxResults=50,
+        order='alphabetical').execute()
+    print(subscriptions_response)
+    return False
 
 if __name__ == '__main__':
     youtube_service = get_authenticated_service()
     VIDEO_ID = "tnTPaLOaHz8"
+    #is_channel_subscribed(youtube_service)
     subscribe_to_commenters(youtube_service, VIDEO_ID)
