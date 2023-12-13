@@ -36,10 +36,41 @@ def add_subscription(youtube, channel_id):
     except Exception as e:
         print(f"Erreur lors de l'abonnement : {str(e)}")
 
+def get_video_comments(youtube, video_id, max_results=100):
+    comments = []
+
+    request = youtube.commentThreads().list(
+        part="snippet",
+        videoId=video_id,
+        order="relevance",
+        textFormat="plainText",
+        maxResults=max_results
+    )
+
+    while request:
+        response = request.execute()
+        for item in response["items"]:
+            comment = item["snippet"]["topLevelComment"]["snippet"]["authorChannelId"]["value"]
+            comments.append(comment)
+
+        request = youtube.commentThreads().list_next(request, response)
+
+    return comments
+
+
+def subscribe_to_commenters(youtube, video_id, max_results=100):
+    print("Récupération des commenteurs")
+    commenters = get_video_comments(youtube, video_id, max_results)
+
+    for commenter_id in commenters:
+        add_subscription(youtube, commenter_id)
+        print(f"Abonnement à la chaîne {commenter_id} effectué.")
+
 if __name__ == '__main__':
     youtube_service = get_authenticated_service()
 
-    # Remplacez CHANNEL_ID par l'ID de la chaîne à laquelle vous souhaitez vous abonner
-    CHANNEL_ID = "UCo33niDKpTpgwZ_dohqvylg"
+    # Remplacez VIDEO_ID par l'ID de la vidéo dont vous souhaitez récupérer les commentaires
+    VIDEO_ID = "tnTPaLOaHz8"
 
-    add_subscription(youtube_service, CHANNEL_ID)
+    subscribe_to_commenters(youtube_service, VIDEO_ID)
+
