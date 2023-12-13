@@ -1,6 +1,3 @@
-import os
-import subprocess
-import json
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
@@ -36,41 +33,31 @@ def add_subscription(youtube, channel_id):
     except Exception as e:
         print(f"Erreur lors de l'abonnement : {str(e)}")
 
-def get_video_comments(youtube, video_id, max_results=100):
-    comments = []
+def get_comment_threads(youtube, video_id, max_results):
+    results = youtube.commentThreads().list(
+    part="snippet",
+    maxResults=max_results,
+    videoId=video_id,
+    textFormat="plainText"
+    ).execute()
+    for item in results["items"]:
+        comment = item["snippet"]["topLevelComment"]
+        author = comment["snippet"]["authorDisplayName"]
+        text = comment["snippet"]["textDisplay"]
+    return results["items"]
 
-    request = youtube.commentThreads().list(
-        part="snippet",
-        videoId=video_id,
-        order="relevance",
-        textFormat="plainText",
-        maxResults=max_results
-    )
-
-    while request:
-        response = request.execute()
-        for item in response["items"]:
-            comment = item["snippet"]["topLevelComment"]["snippet"]["authorChannelId"]["value"]
-            comments.append(comment)
-
-        request = youtube.commentThreads().list_next(request, response)
-
-    return comments
-
-
-def subscribe_to_commenters(youtube, video_id, max_results=100):
-    print("Récupération des commenteurs")
-    commenters = get_video_comments(youtube, video_id, max_results)
+def subscribe_to_commenters(youtube, video_id, max_results=5):
+    commenters = get_comment_threads(youtube, video_id,max_results)
+    print("Récupération des commenteurs réussi !")
 
     for commenter_id in commenters:
-        add_subscription(youtube, commenter_id)
-        print(f"Abonnement à la chaîne {commenter_id} effectué.")
+        id_guy = commenter_id["snippet"]["topLevelComment"]["snippet"]["authorChannelId"]["value"]
+        print(f"ChaîneID {id_guy} récupérée")
+        add_subscription(youtube, id_guy)
+        print(f"Abonnement à la chaîne {commenter_id['snippet']['authorDisplayName']} effectué.")
+        print("------------")
 
 if __name__ == '__main__':
     youtube_service = get_authenticated_service()
-
-    # Remplacez VIDEO_ID par l'ID de la vidéo dont vous souhaitez récupérer les commentaires
     VIDEO_ID = "tnTPaLOaHz8"
-
     subscribe_to_commenters(youtube_service, VIDEO_ID)
-
